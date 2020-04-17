@@ -1,6 +1,7 @@
-#include <stdio.h>
 #include<stdlib.h>
 #include <assert.h>
+#include <time.h>
+#include <stdio.h>
 
 FILE* input_file;
 FILE* output_file;
@@ -8,6 +9,25 @@ double** Matrix;
 int rows = 0;
 int colums = 0;
 void CopyValues(FILE* input_file);
+
+double mean(double* arr, int n)
+{
+	int i;
+	double sum = 0;
+	for (i = 0; i < n; i++)
+		sum = sum + arr[i];
+	return sum / n;
+}
+
+void StandrizeMatrix() {
+	int i, j;
+	for (i = 0; i < rows; i++) {
+		double rowMean = mean(Matrix[i], colums);
+		for (j = 0; j < colums; j++) {
+			Matrix[i][j] = Matrix[i][j] - rowMean;
+		}
+	}
+}
 
 void GenerateMatrix(FILE* file,int rows) {
 	int i;
@@ -18,36 +38,23 @@ void GenerateMatrix(FILE* file,int rows) {
 
 	CopyValues(file);
 	fclose(file);
+
+	StandrizeMatrix();
 }
 
 void CopyValues(FILE* input_file) {
-	int i, j;
+	int i;
 
 	for (i = 0; i < rows; i++) {
-		for (j = 0; j < colums; j++) {
-			fread(&Matrix[i][j], sizeof(double), 1, input_file);
-		}
+		fread(Matrix[i], sizeof(double), colums, input_file);
 	}
-}
-
-double mean(double *arr, int n)
-{
-	int i;
-	double sum = 0;
-	for (i = 0; i < n; i++)
-		sum = sum + arr[i];
-	return sum / n;
 }
 
 double covariance(double *arr1, double *arr2, int n)
 {
-	int i;
-	double mean1,mean2,sum = 0;
-	mean1 = mean(arr1, n);
-	mean2 = mean(arr2, n);
+	int i; double sum = 0;
 	for (i = 0; i < n; i++)
-		sum = sum + (arr1[i] - mean1) *
-		(arr2[i] - mean2);
+		sum = sum + (arr1[i]) *(arr2[i]);
 	return sum;
 }
 
@@ -75,7 +82,11 @@ void WriteToFile(char* fileName) {
 }
 
 int main(int argc, char* argv[]) {
+
+	clock_t startTime, finishTime;
+	double time;
 	assert(argc != -1);
+	startTime = clock();
 	input_file= fopen(argv[1], "r");
 
 	fread(&colums, sizeof(int), 1, input_file);
@@ -83,5 +94,8 @@ int main(int argc, char* argv[]) {
 
 	GenerateMatrix(input_file,rows);
 	WriteToFile(argv[2]);
+	finishTime = clock();
+	time = ((double)(finishTime - startTime) / CLOCKS_PER_SEC);
+	printf("\n---running time: %f seconds ---\n", time);
 	return 0;
 }
